@@ -155,7 +155,7 @@ public abstract class ClientTransportConfig<CONF extends TransportConfig> extend
 	Consumer<? super CONF>                   doOnConnect;
 	Consumer<? super Connection>             doOnConnected;
 	Consumer<? super Connection>             doOnDisconnected;
-	Consumer<? super Connection>                doOnResolve;
+	BiConsumer<? super Connection, SocketAddress>                doOnResolve;
 	BiConsumer<? super Connection, ? super SocketAddress> doAfterResolve;
 	BiConsumer<? super Connection, ? super Throwable> doOnResolveError;
 	NameResolverProvider                     nameResolverProvider;

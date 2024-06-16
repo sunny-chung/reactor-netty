@@ -153,7 +153,16 @@ public abstract class ClientTransport<T extends ClientTransport<T, CONF>,
 		Objects.requireNonNull(doOnResolve, "doOnResolve");
 		T dup = duplicate();
 		@SuppressWarnings("unchecked")
-		Consumer<Connection> current = (Consumer<Connection>) configuration().doOnResolve;
+		BiConsumer<Connection, SocketAddress> current = (BiConsumer<Connection, SocketAddress>) configuration().doOnResolve;
+		dup.configuration().doOnResolve = current == null ? ((x, __) -> doOnResolve.accept(x)) : current.andThen((x, __) -> doOnResolve.accept(x));
+		return dup;
+	}
+
+	public final T doOnResolve(BiConsumer<? super Connection, SocketAddress> doOnResolve) {
+		Objects.requireNonNull(doOnResolve, "doOnResolve");
+		T dup = duplicate();
+		@SuppressWarnings("unchecked")
+		BiConsumer<Connection, SocketAddress> current = (BiConsumer<Connection, SocketAddress>) configuration().doOnResolve;
 		dup.configuration().doOnResolve = current == null ? doOnResolve : current.andThen(doOnResolve);
 		return dup;
 	}

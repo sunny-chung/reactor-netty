@@ -322,7 +322,7 @@ public final class TransportConnector {
 			if (config instanceof ClientTransportConfig) {
 				final ClientTransportConfig<?> clientTransportConfig = (ClientTransportConfig<?>) config;
 				if (clientTransportConfig.doOnResolve != null) {
-					clientTransportConfig.doOnResolve.accept(Connection.from(channel));
+					clientTransportConfig.doOnResolve.accept(Connection.from(channel), remoteAddress);
 				}
 			}
 
