@@ -31,6 +31,7 @@ import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerAdapter;
 import io.netty.channel.ChannelHandlerContext;
@@ -442,7 +443,7 @@ public final class HttpClientConfig extends ClientTransportConfig<HttpClientConf
 	}
 
 	@Override
-	protected void loggingHandler(LoggingHandler loggingHandler) {
+	public void loggingHandler(ChannelDuplexHandler loggingHandler) {
 		super.loggingHandler(loggingHandler);
 	}
 

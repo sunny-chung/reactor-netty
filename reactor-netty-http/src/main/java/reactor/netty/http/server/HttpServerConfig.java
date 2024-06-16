@@ -16,6 +16,7 @@
 package reactor.netty.http.server;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerAdapter;
 import io.netty.channel.ChannelHandlerContext;
@@ -379,7 +380,7 @@ public final class HttpServerConfig extends ServerTransportConfig<HttpServerConf
 	}
 
 	@Override
-	protected void loggingHandler(LoggingHandler loggingHandler) {
+	protected void loggingHandler(ChannelDuplexHandler loggingHandler) {
 		super.loggingHandler(loggingHandler);
 	}
 

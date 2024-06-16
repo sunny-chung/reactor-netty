@@ -26,6 +26,7 @@ import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFactory;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
@@ -161,7 +162,7 @@ public abstract class TransportConfig {
 	 * @return the configured {@link LoggingHandler} or null
 	 */
 	@Nullable
-	public final LoggingHandler loggingHandler() {
+	public final ChannelDuplexHandler loggingHandler() {
 		return loggingHandler;
 	}
 
@@ -203,7 +204,7 @@ public abstract class TransportConfig {
 	Supplier<? extends SocketAddress>          bindAddress;
 	ChannelGroup                               channelGroup;
 	ChannelPipelineConfigurer                  doOnChannelInit;
-	LoggingHandler                             loggingHandler;
+	ChannelDuplexHandler loggingHandler;
 	LoopResources                              loopResources;
 	ChannelMetricsRecorder                     metricsRecorder;
 	ConnectionObserver                         observer;
@@ -319,7 +320,7 @@ public abstract class TransportConfig {
 	 */
 	protected abstract EventLoopGroup eventLoopGroup();
 
-	protected void loggingHandler(LoggingHandler loggingHandler) {
+	protected void loggingHandler(ChannelDuplexHandler loggingHandler) {
 		this.loggingHandler = loggingHandler;
 	}
 

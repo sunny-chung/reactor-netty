@@ -28,6 +28,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelDuplexHandler;
 import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaderValues;
@@ -40,6 +41,7 @@ import io.netty.handler.codec.http.cookie.ClientCookieDecoder;
 import io.netty.handler.codec.http.cookie.ClientCookieEncoder;
 import io.netty.handler.codec.http.cookie.Cookie;
 import io.netty.handler.codec.http.cookie.DefaultCookie;
+import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.ssl.OpenSsl;
 import io.netty.handler.ssl.SslContext;
 import org.reactivestreams.Publisher;
@@ -1135,6 +1137,15 @@ public abstract class HttpClient extends ClientTransport<HttpClient, HttpClientC
 		HttpHeaders headers = configuration().headers.copy();
 		HttpUtil.setKeepAlive(headers, HttpVersion.HTTP_1_1, keepAlive);
 		dup.configuration().headers = headers;
+		return dup;
+	}
+
+	public final HttpClient loggingHandler(ChannelDuplexHandler loggingHandler) {
+		if (loggingHandler.equals(configuration().loggingHandler())) {
+			return this;
+		}
+		HttpClient dup = duplicate();
+		dup.configuration().loggingHandler(loggingHandler);
 		return dup;
 	}
 
