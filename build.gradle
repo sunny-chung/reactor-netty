@@ -185,7 +185,7 @@ spotless {
 }
 
 subprojects {
-	group = 'io.projectreactor.netty'
+	group = 'io.github.sunny-chung'
 
 	apply plugin: 'java-library'
 	apply plugin: 'jacoco'
