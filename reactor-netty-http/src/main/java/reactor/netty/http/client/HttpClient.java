@@ -41,6 +41,7 @@ import io.netty.handler.codec.http.cookie.ClientCookieDecoder;
 import io.netty.handler.codec.http.cookie.ClientCookieEncoder;
 import io.netty.handler.codec.http.cookie.Cookie;
 import io.netty.handler.codec.http.cookie.DefaultCookie;
+import io.netty.handler.codec.http2.Http2FrameLogger;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.ssl.OpenSsl;
 import io.netty.handler.ssl.SslContext;
@@ -1146,6 +1147,15 @@ public abstract class HttpClient extends ClientTransport<HttpClient, HttpClientC
 		}
 		HttpClient dup = duplicate();
 		dup.configuration().loggingHandler(loggingHandler);
+		return dup;
+	}
+
+	public final HttpClient http2FrameLogger(Http2FrameLogger http2FrameLogger) {
+		if (http2FrameLogger.equals(configuration().http2FrameLogger())) {
+			return this;
+		}
+		HttpClient dup = duplicate();
+		dup.configuration().http2FrameLogger(http2FrameLogger);
 		return dup;
 	}
 

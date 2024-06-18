@@ -331,6 +331,7 @@ public final class HttpClientConfig extends ClientTransportConfig<HttpClientConf
 	BiConsumer<? super HttpClientResponse, ? super Throwable> doOnResponseError;
 	BiPredicate<HttpClientRequest, HttpClientResponse> followRedirectPredicate;
 	HttpHeaders headers;
+	Http2FrameLogger http2FrameLogger;
 	Http2SettingsSpec http2Settings;
 	HttpMessageLogFactory httpMessageLogFactory;
 	HttpMethod method;
@@ -380,6 +381,7 @@ public final class HttpClientConfig extends ClientTransportConfig<HttpClientConf
 		this.doOnResponseError = parent.doOnResponseError;
 		this.followRedirectPredicate = parent.followRedirectPredicate;
 		this.headers = parent.headers;
+		this.http2FrameLogger = parent.http2FrameLogger;
 		this.http2Settings = parent.http2Settings;
 		this.httpMessageLogFactory = parent.httpMessageLogFactory;
 		this.method = parent.method;
@@ -496,6 +498,14 @@ public final class HttpClientConfig extends ClientTransportConfig<HttpClientConf
 
 	boolean checkProtocol(int protocol) {
 		return (_protocols & protocol) == protocol;
+	}
+
+	Http2FrameLogger http2FrameLogger() {
+		return http2FrameLogger;
+	}
+
+	void http2FrameLogger(Http2FrameLogger http2FrameLogger) {
+		this.http2FrameLogger = http2FrameLogger;
 	}
 
 	Http2Settings http2Settings() {
@@ -619,7 +629,7 @@ public final class HttpClientConfig extends ClientTransportConfig<HttpClientConf
 	}
 
 	static void configureHttp2Pipeline(ChannelPipeline p, boolean acceptGzip, HttpResponseDecoderSpec decoder,
-			Http2Settings http2Settings, ConnectionObserver observer) {
+			Http2Settings http2Settings, ConnectionObserver observer, @Nullable Http2FrameLogger http2FrameLogger) {
 		Http2FrameCodecBuilder http2FrameCodecBuilder =
 				Http2FrameCodecBuilder.forClient()
 				                      .validateHeaders(decoder.validateHeaders())
@@ -628,6 +638,10 @@ public final class HttpClientConfig extends ClientTransportConfig<HttpClientConf
 		if (p.get(NettyPipeline.LoggingHandler) != null) {
 			http2FrameCodecBuilder.frameLogger(new Http2FrameLogger(LogLevel.DEBUG,
 					"reactor.netty.http.client.h2"));
+		}
+
+		if (http2FrameLogger != null) {
+			http2FrameCodecBuilder.frameLogger(http2FrameLogger);
 		}
 
 		p.addBefore(NettyPipeline.ReactiveBridge, NettyPipeline.H2Flush, new FlushConsolidationHandler(1024, true))
@@ -647,7 +661,8 @@ public final class HttpClientConfig extends ClientTransportConfig<HttpClientConf
 			ChannelOperations.OnSetup opsFactory,
 			@Nullable SocketAddress proxyAddress,
 			SocketAddress remoteAddress,
-			@Nullable Function<String, String> uriTagValue) {
+			@Nullable Function<String, String> uriTagValue,
+			@Nullable Http2FrameLogger http2FrameLogger) {
 		HttpDecoderConfig decoderConfig = new HttpDecoderConfig();
 		decoderConfig.setMaxInitialLineLength(decoder.maxInitialLineLength())
 		             .setMaxHeaderSize(decoder.maxHeaderSize())
@@ -666,6 +681,10 @@ public final class HttpClientConfig extends ClientTransportConfig<HttpClientConf
 		if (p.get(NettyPipeline.LoggingHandler) != null) {
 			http2FrameCodecBuilder.frameLogger(new Http2FrameLogger(LogLevel.DEBUG,
 					"reactor.netty.http.client.h2"));
+		}
+
+		if (http2FrameLogger != null) {
+			http2FrameCodecBuilder.frameLogger(http2FrameLogger);
 		}
 
 		Http2FrameCodec http2FrameCodec = http2FrameCodecBuilder.build();
@@ -923,8 +942,9 @@ public final class HttpClientConfig extends ClientTransportConfig<HttpClientConf
 		final SocketAddress                              proxyAddress;
 		final SocketAddress                              remoteAddress;
 		final Function<String, String>                   uriTagValue;
+		final Http2FrameLogger http2FrameLogger;
 
-		H2OrHttp11Codec(HttpClientChannelInitializer initializer, ConnectionObserver observer, SocketAddress remoteAddress) {
+		H2OrHttp11Codec(HttpClientChannelInitializer initializer, ConnectionObserver observer, SocketAddress remoteAddress, Http2FrameLogger http2FrameLogger) {
 			this.acceptGzip = initializer.acceptGzip;
 			this.decoder = initializer.decoder;
 			this.http2Settings = initializer.http2Settings;
@@ -933,6 +953,7 @@ public final class HttpClientConfig extends ClientTransportConfig<HttpClientConf
 			this.proxyAddress = initializer.proxyAddress;
 			this.remoteAddress = remoteAddress;
 			this.uriTagValue = initializer.uriTagValue;
+			this.http2FrameLogger = http2FrameLogger;
 		}
 
 		@Override
@@ -946,7 +967,7 @@ public final class HttpClientConfig extends ClientTransportConfig<HttpClientConf
 					log.debug(format(ctx.channel(), "Negotiated application-level protocol [" + protocol + "]"));
 				}
 				if (ApplicationProtocolNames.HTTP_2.equals(protocol)) {
-					configureHttp2Pipeline(ctx.channel().pipeline(), acceptGzip, decoder, http2Settings, observer);
+					configureHttp2Pipeline(ctx.channel().pipeline(), acceptGzip, decoder, http2Settings, observer, http2FrameLogger);
 				}
 				else if (ApplicationProtocolNames.HTTP_1_1.equals(protocol)) {
 					configureHttp11Pipeline(ctx.channel().pipeline(), acceptGzip, decoder, metricsRecorder, proxyAddress, remoteAddress, uriTagValue);
@@ -976,6 +997,7 @@ public final class HttpClientConfig extends ClientTransportConfig<HttpClientConf
 		final SocketAddress                              proxyAddress;
 		final SslProvider                                sslProvider;
 		final Function<String, String>                   uriTagValue;
+		final Http2FrameLogger http2FrameLogger;
 
 		HttpClientChannelInitializer(HttpClientConfig config) {
 			this.acceptGzip = config.acceptGzip;
@@ -987,6 +1009,7 @@ public final class HttpClientConfig extends ClientTransportConfig<HttpClientConf
 			this.proxyAddress = config.proxyProvider() != null ? config.proxyProvider().getAddress().get() : null;
 			this.sslProvider = config.sslProvider;
 			this.uriTagValue = config.uriTagValue;
+			this.http2FrameLogger = config.http2FrameLogger;
 		}
 
 		@Override
@@ -997,24 +1020,24 @@ public final class HttpClientConfig extends ClientTransportConfig<HttpClientConf
 				if ((protocols & h11orH2) == h11orH2) {
 					channel.pipeline()
 					       .addBefore(NettyPipeline.ReactiveBridge, NettyPipeline.H2OrHttp11Codec,
-					               new H2OrHttp11Codec(this, observer, remoteAddress));
+					               new H2OrHttp11Codec(this, observer, remoteAddress, http2FrameLogger));
 				}
 				else if ((protocols & h11) == h11) {
 					configureHttp11Pipeline(channel.pipeline(), acceptGzip, decoder, metricsRecorder, proxyAddress, remoteAddress, uriTagValue);
 				}
 				else if ((protocols & h2) == h2) {
-					configureHttp2Pipeline(channel.pipeline(), acceptGzip, decoder, http2Settings, observer);
+					configureHttp2Pipeline(channel.pipeline(), acceptGzip, decoder, http2Settings, observer, http2FrameLogger);
 				}
 			}
 			else {
 				if ((protocols & h11orH2C) == h11orH2C) {
-					configureHttp11OrH2CleartextPipeline(channel.pipeline(), acceptGzip, decoder, http2Settings, metricsRecorder, observer, opsFactory, proxyAddress, remoteAddress, uriTagValue);
+					configureHttp11OrH2CleartextPipeline(channel.pipeline(), acceptGzip, decoder, http2Settings, metricsRecorder, observer, opsFactory, proxyAddress, remoteAddress, uriTagValue, http2FrameLogger);
 				}
 				else if ((protocols & h11) == h11) {
 					configureHttp11Pipeline(channel.pipeline(), acceptGzip, decoder, metricsRecorder, proxyAddress, remoteAddress, uriTagValue);
 				}
 				else if ((protocols & h2c) == h2c) {
-					configureHttp2Pipeline(channel.pipeline(), acceptGzip, decoder, http2Settings, observer);
+					configureHttp2Pipeline(channel.pipeline(), acceptGzip, decoder, http2Settings, observer, http2FrameLogger);
 				}
 			}
 		}
