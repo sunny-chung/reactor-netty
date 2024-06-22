@@ -637,11 +637,13 @@ public final class HttpClientConfig extends ClientTransportConfig<HttpClientConf
 
 		if (p.get(NettyPipeline.LoggingHandler) != null) {
 			http2FrameCodecBuilder.frameLogger(new Http2FrameLogger(LogLevel.DEBUG,
-					"reactor.netty.http.client.h2"));
+					"reactor.netty.http.client.h2"))
+					.inspectHeaders(true);
 		}
 
 		if (http2FrameLogger != null) {
-			http2FrameCodecBuilder.frameLogger(http2FrameLogger);
+			http2FrameCodecBuilder.frameLogger(http2FrameLogger)
+					.inspectHeaders(true);
 		}
 
 		p.addBefore(NettyPipeline.ReactiveBridge, NettyPipeline.H2Flush, new FlushConsolidationHandler(1024, true))
@@ -680,11 +682,13 @@ public final class HttpClientConfig extends ClientTransportConfig<HttpClientConf
 
 		if (p.get(NettyPipeline.LoggingHandler) != null) {
 			http2FrameCodecBuilder.frameLogger(new Http2FrameLogger(LogLevel.DEBUG,
-					"reactor.netty.http.client.h2"));
+					"reactor.netty.http.client.h2"))
+					.inspectHeaders(true);
 		}
 
 		if (http2FrameLogger != null) {
-			http2FrameCodecBuilder.frameLogger(http2FrameLogger);
+			http2FrameCodecBuilder.frameLogger(http2FrameLogger)
+					.inspectHeaders(true);
 		}
 
 		Http2FrameCodec http2FrameCodec = http2FrameCodecBuilder.build();
