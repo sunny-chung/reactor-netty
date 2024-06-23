@@ -19,3 +19,5 @@ exportToHtml
 .gradletasknamecache
 *.iml
 .idea
+
+local.properties

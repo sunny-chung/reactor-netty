@@ -330,6 +330,12 @@ subprojects {
 	}
 
 	check.dependsOn jacocoTestReport
+
+	if (!List.of("reactor-netty", "reactor-netty-core", "reactor-netty-http").contains(project.name)) {
+		project.tasks.withType(PublishToMavenRepository).configureEach {
+			it.enabled = false
+		}
+	}
 }
 
 configurations.all {
